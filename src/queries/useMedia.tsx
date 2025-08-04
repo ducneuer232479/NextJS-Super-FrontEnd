@@ -1,4 +1,4 @@
-import { mediaApiRequest } from '@/apiRequests/medai'
+import { mediaApiRequest } from '@/apiRequests/media'
 import { useMutation } from '@tanstack/react-query'
 
 export const useUploadMediaMutation = () =>

@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation'
 import authApiRequest from '@/apiRequests/auth'
 import { handleErrorApi } from '@/lib/utils'
 import { useLogoutMutation } from '@/queries/useAuth'
-import { useAccountProfile } from '@/queries/useAccount'
+import { useAccountMe } from '@/queries/useAccount'
 
 const account = {
   name: 'Nguyễn Văn A',
@@ -24,7 +24,7 @@ const account = {
 export default function DropdownAvatar() {
   const router = useRouter()
   const logoutMutation = useLogoutMutation()
-  const { data } = useAccountProfile()
+  const { data } = useAccountMe()
   const account = data?.payload.data
 
   const logout = async () => {

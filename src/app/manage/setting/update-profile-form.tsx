@@ -13,12 +13,17 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useAccountProfile } from '@/queries/useAccount'
+import { useAccountMe, useUpdateMeMutation } from '@/queries/useAccount'
+import { useUploadMediaMutation } from '@/queries/useMedia'
+import { toast } from '@/hooks/use-toast'
+import { handleErrorApi } from '@/lib/utils'
 
 export default function UpdateProfileForm() {
   const [file, setFile] = useState<File | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
-  const { data } = useAccountProfile()
+  const { data, refetch } = useAccountMe()
+  const uploadMediaMutation = useUploadMediaMutation()
+  const updateMeMutation = useUpdateMeMutation()
   const form = useForm<UpdateMeBodyType>({
     resolver: zodResolver(UpdateMeBody),
     defaultValues: {
@@ -37,6 +42,42 @@ export default function UpdateProfileForm() {
     return avatar
   }, [file, avatar])
 
+  const reset = () => {
+    form.reset()
+    setFile(null)
+  }
+
+  const onSubmit = async (values: UpdateMeBodyType) => {
+    if (updateMeMutation.isPending) return
+
+    try {
+      let body = values
+      if (file) {
+        const formData = new FormData()
+        formData.append('file', file)
+        const uploadImageResult = await uploadMediaMutation.mutateAsync(
+          formData
+        )
+        console.log('uploadImageResult', uploadImageResult)
+        const imageUrl = uploadImageResult.payload.data
+        body = {
+          ...values,
+          avatar: imageUrl
+        }
+      }
+      const updateMeResult = await updateMeMutation.mutateAsync(body)
+      toast({
+        description: updateMeResult.payload.message
+      })
+      refetch()
+    } catch (error) {
+      handleErrorApi({
+        error,
+        setError: form.setError
+      })
+    }
+  }
+
   useEffect(() => {
     if (data) {
       const { name, avatar } = data.payload.data
@@ -52,6 +93,10 @@ export default function UpdateProfileForm() {
       <form
         noValidate
         className='grid auto-rows-max items-start gap-4 md:gap-8'
+        onReset={reset}
+        onSubmit={form.handleSubmit(onSubmit, (e) => {
+          console.log(e)
+        })}
       >
         <Card x-chunk='dashboard-07-chunk-0'>
           <CardHeader>
@@ -80,6 +125,9 @@ export default function UpdateProfileForm() {
                           const file = e.target.files?.[0]
                           if (file) {
                             setFile(file)
+                            field.onChange(
+                              'http://localhost:3000/' + field.name
+                            )
                           }
                         }}
                       />
